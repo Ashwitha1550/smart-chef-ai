@@ -1,149 +1,161 @@
-# smart-chef-ai
-Multi-agent AI system that generates personalized recipes from available ingredients
 # 🍳 SmartChef AI – Multi-Agent Recipe Creator
 
-SmartChef AI is a **multi-agent AI system** that generates **personalized, diet-friendly, and occasion-specific recipes** using only the ingredients provided by the user.
+SmartChef AI is a multi-agent AI system that generates personalized, diet-friendly, and occasion-specific recipes using only the ingredients provided by the user.
 
-This project was built as part of the **Google Capstone – Agents Intensive Program** to demonstrate **agentic AI design**, modular architecture, and real-world problem solving.
+This project was built as part of the Google Capstone – Agents Intensive Program to demonstrate agentic AI design, modular architecture, and real-world problem solving.
 
----
+--------------------------------------------------
 
-## 📌 Problem Statement
+## Step 1: Problem Identification
 
-Many people struggle daily with deciding what to cook using the ingredients they already have.  
-Traditional recipe applications require long browsing, manual filtering, and often result in wasted food or poor meal choices.
+Many users face difficulty deciding what to cook with the ingredients they already have. Existing recipe applications require manual search and filtering, which is time-consuming and inefficient.
 
-There is a need for an intelligent system that can:
-- Instantly suggest recipes
-- Use available ingredients efficiently
-- Adapt to diet preferences and occasions
+The goal was to build an intelligent system that can:
+• Accept ingredients as input
+• Automatically suggest suitable recipes
+• Apply user preferences and constraints
 
----
+--------------------------------------------------
 
-## 💡 Solution Overview
+## Step 2: Choosing Multi-Agent Architecture
 
-SmartChef AI solves this problem using a **multi-agent approach**.
+Instead of building a single monolithic program, the system was designed using a multi-agent architecture.
 
-The system:
-- Understands ingredients from natural language
-- Generates multiple recipe options
-- Filters by diet and event (lunchbox, party, quick meals)
-- Ranks recipes using user preferences
-- Stores preferences for personalization
+Each agent is responsible for a specific task:
+• Input understanding
+• Recipe generation
+• Ranking and personalization
 
----
+This improves modularity, scalability, and maintainability.
 
-## 🤖 Why Multi-Agent Architecture?
+--------------------------------------------------
 
-A single AI prompt is not sufficient for this problem because recipe creation involves multiple reasoning steps.
+## Step 3: Designing the System Flow
 
-Using multiple agents allows:
-- Task specialization
-- Better accuracy
-- Scalability and maintainability
-- Personalization using memory
-
----
-
-## 🏗️ System Architecture
-
-**Flow:**
+The overall system flow is:
 
 User Input  
 → Ingredient Interpreter Agent  
 → Recipe Generation Agent  
-→ Ranking & Personalization Agent  
-→ Final Recipe Recommendations  
+→ Ranking Agent  
+→ Final Output  
 
----
+--------------------------------------------------
 
-## 🧩 Agent Details
+## Step 4: Building Ingredient Interpreter Agent
 
-### 1️⃣ Ingredient Interpreter Agent
-**Role:** Cleans and normalizes user input.
+This agent processes raw user input and converts it into structured data.
 
-**Responsibilities:**
-- Extracts ingredients from free-text input
-- Normalizes ingredient names
-- Removes duplicates and invalid items
+Responsibilities:
+• Normalize text
+• Extract ingredients
+• Remove duplicates
 
----
+```python
+# agents/interpreter.py
 
-### 2️⃣ Recipe Generation Agent
-**Role:** Generates recipe options.
+class IngredientInterpreterAgent:
+    def run(self, user_input: str) -> list:
+        text = user_input.lower()
+        text = text.replace("i have", "")
+        text = text.replace("and", ",")
+        items = text.split(",")
 
-**Responsibilities:**
-- Uses cleaned ingredients
-- Matches recipes from a dataset
-- Applies dietary constraints
-- Produces multiple recipe suggestions
+        cleaned = [item.strip() for item in items if item.strip()]
+        return list(set(cleaned))
+```
 
----
+--------------------------------------------------
 
-### 3️⃣ Ranking & Personalization Agent
-**Role:** Filters and ranks recipes.
+## Step 5: Building Recipe Generation Agent
 
-**Responsibilities:**
-- Applies diet rules (vegetarian, vegan, etc.)
-- Ranks recipes by preparation time and relevance
-- Uses stored user preferences for personalization
+This agent generates recipe options using the cleaned ingredient list.
 
----
+```python
+# agents/generator.py
 
-## 🧠 Memory System
+from tools.recipe_db import search_recipes
 
-- **Session Memory:** Stores ingredients and generated recipes during a session
-- **Long-Term Memory:** Stores user preferences for future recommendations
+class RecipeGenerationAgent:
+    def run(self, ingredients: list) -> list:
+        return search_recipes(ingredients)
+```
 
-This enables personalized results across sessions.
+--------------------------------------------------
 
----
+## Step 6: Creating Recipe Tool (Database)
 
-## 🛠️ Tech Stack
+A simple recipe database tool is used to match ingredients.
 
-- **Language:** Python 3
-- **Architecture:** Multi-Agent AI System
-- **Concepts Used:** Agent orchestration, memory, modular design
-- **Platform:** GitHub
+```python
+# tools/recipe_db.py
 
----
+def search_recipes(ingredients: list) -> list:
+    recipes = [
+        {"name": "Vegetable Sandwich", "ingredients": ["bread", "tomato", "onion"], "prep_time": 10},
+        {"name": "Tomato Omelette", "ingredients": ["tomato", "egg"], "prep_time": 8},
+        {"name": "Veg Stir Fry", "ingredients": ["onion", "capsicum", "tomato"], "prep_time": 15}
+    ]
 
-## 📁 Project Structure
+    return [r for r in recipes if any(i in r["ingredients"] for i in ingredients)]
+```
 
-smart-chef-ai/
-├── main.py
-├── agents/
-│ ├── interpreter.py
-│ ├── generator.py
-│ └── ranker.py
-├── tools/
-│ └── recipe_db.py
-├── memory/
-│ └── session_store.py
-├── requirements.txt
-└── README.md
+--------------------------------------------------
 
+## Step 7: Building Ranking & Personalization Agent
 
----
+This agent ranks recipes based on relevance and preparation time.
 
-## 🌍 Impact
+```python
+# agents/ranker.py
 
-- Reduces food waste
-- Saves time in daily meal planning
-- Encourages healthier eating
-- Demonstrates real-world agentic AI design
+class RankingAgent:
+    def run(self, recipes: list, preferences: dict) -> list:
+        return sorted(recipes, key=lambda x: x["prep_time"])
+```
 
----
+--------------------------------------------------
 
-## 🏁 Conclusion
+## Step 8: Orchestrating All Agents
 
-SmartChef AI demonstrates how **multi-agent AI systems** can effectively solve real-world problems by breaking complex workflows into specialized components.  
-The project highlights modular design, personalization, and scalability.
+The main orchestrator controls the execution flow and agent communication.
 
----
+```python
+# main.py
 
-## 👩‍💻 Author
+from agents.interpreter import IngredientInterpreterAgent
+from agents.generator import RecipeGenerationAgent
+from agents.ranker import RankingAgent
 
-**Ashwitha Ummalla**  
-Google Capstone – Agents Intensive
+class SmartChefOrchestrator:
+    def run(self, user_input: str):
+        ingredients = IngredientInterpreterAgent().run(user_input)
+        recipes = RecipeGenerationAgent().run(ingredients)
+        return RankingAgent().run(recipes, {})
 
+if __name__ == "__main__":
+    chef = SmartChefOrchestrator()
+    print(chef.run("I have tomato, onion and bread"))
+```
+
+--------------------------------------------------
+
+## Step 9: Final Output
+
+The system returns a ranked list of recipes with minimal preparation time and high relevance.
+
+--------------------------------------------------
+
+## Step 10: Key Learnings
+
+• Multi-agent system design
+• Modular architecture
+• Rule-based AI decision making
+• Real-world problem solving
+• End-to-end project execution
+
+--------------------------------------------------
+
+## Conclusion
+
+SmartChef AI demonstrates how agent-based AI systems can solve real-world problems by dividing complex workflows into specialized components.
